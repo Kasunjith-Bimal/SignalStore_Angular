@@ -1,0 +1,73 @@
+﻿using System.Collections.Generic;
+using System.Linq;
+using Microsoft.AspNetCore.Mvc;
+using TodoModel = Todo.API.Models.Todo;
+
+namespace Todo.API.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class TodoController : ControllerBase
+    {
+        private static readonly List<TodoModel> _todos = new()
+        {
+            new TodoModel { Id = 1, Title = "Sample Todo 1", Completed = false },
+            new TodoModel { Id = 2, Title = "Sample Todo 2", Completed = true }
+        };
+
+        // GET: api/todo
+        [HttpGet]
+        public ActionResult<IEnumerable<TodoModel>> GetAll()
+        {
+            return Ok(_todos);
+        }
+
+        // GET: api/todo/{id}
+        [HttpGet("{id}")]
+        public ActionResult<TodoModel> GetById(int id)
+        {
+            var todo = _todos.FirstOrDefault(t => t.Id == id);
+            if (todo == null) return NotFound();
+            return Ok(todo);
+        }
+
+        // POST: api/todo
+        [HttpPost]
+        public ActionResult<TodoModel> Create([FromBody] TodoModel todo)
+        {
+            if (todo == null) return BadRequest();
+
+            var nextId = _todos.Any() ? _todos.Max(t => t.Id) + 1 : 1;
+            todo.Id = nextId;
+            _todos.Add(todo);
+
+            return CreatedAtAction(nameof(GetById), new { id = todo.Id }, todo);
+        }
+
+        // PUT: api/todo/{id}
+        [HttpPut("{id}")]
+        public IActionResult Update(int id, [FromBody] TodoModel updated)
+        {
+            if (updated == null || id != updated.Id) return BadRequest();
+
+            var existing = _todos.FirstOrDefault(t => t.Id == id);
+            if (existing == null) return NotFound();
+
+            existing.Title = updated.Title;
+            existing.Completed = updated.Completed;
+
+            return NoContent();
+        }
+
+        // DELETE: api/todo/{id}
+        [HttpDelete("{id}")]
+        public IActionResult Delete(int id)
+        {
+            var existing = _todos.FirstOrDefault(t => t.Id == id);
+            if (existing == null) return NotFound();
+
+            _todos.Remove(existing);
+            return NoContent();
+        }
+    }
+}

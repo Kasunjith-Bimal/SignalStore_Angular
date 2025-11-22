@@ -1,0 +1,61 @@
+﻿using Microsoft.EntityFrameworkCore;
+using Todo.API.Data;
+
+namespace Todo.API
+{
+    public class Program
+    {
+        public static void Main(string[] args)
+        {
+            var builder = WebApplication.CreateBuilder(args);
+
+            // Add services to the container.
+
+            builder.Services.AddControllers();
+            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddSwaggerGen();
+
+            // Configure DbContext (SQL Server)
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
+                                   builder.Configuration["ConnectionStrings:DefaultConnection"];
+            if (!string.IsNullOrEmpty(connectionString))
+            {
+                builder.Services.AddDbContext<TodoContext>(options =>
+                    options.UseSqlServer(connectionString));
+            }
+
+            // Optional: allow local Angular dev server access
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll", p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+            });
+
+            var app = builder.Build();
+
+            // Ensure database is created
+            using (var scope = app.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetService<TodoContext>();
+                db?.Database.EnsureCreated();
+            }
+
+            // Configure the HTTP request pipeline.
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseSwagger();
+                app.UseSwaggerUI();
+            }
+
+            app.UseHttpsRedirection();
+
+            app.UseCors("AllowAll");
+
+            app.UseAuthorization();
+
+            app.MapControllers();
+
+            app.Run();
+        }
+    }
+}
